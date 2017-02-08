@@ -1,0 +1,128 @@
+#!/usr/bin/env python
+
+import getopt
+import sys
+import os
+
+# Default values
+usage_warning = 95
+usage_critical = 98
+inode_warning = 95
+inode_critical = 98
+volume_path = ""
+
+def main():
+    global usage_warning
+    global usage_critical
+    global inode_warning
+    global inode_critical
+    global volume_path
+
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], "w:c:W:C:p:h")
+    except getopt.GetoptError as err:
+        # print help information and exit:
+        print str(err) # will print something like "option -a not recognized"
+        return False
+    for o, a in opts:
+        if o == "-h":
+            usage()
+            sys.exit()
+        elif o == "-w":
+            if a.isdigit():
+                usage_warning = int(a)
+            else:
+                return 21;
+        elif o == "-c":
+            if a.isdigit():
+                usage_critical = int(a)
+            else:
+                return 21;
+        elif o == "-W":
+            if a.isdigit():
+                inode_warning = int(a)
+            else:
+                return 21;
+        elif o == "-C":
+            if a.isdigit():
+                inode_critical = int(a)
+            else:
+                return 21;
+        elif o == "-p":
+                volume_path = a
+        else:
+            assert False, "unhandled option"
+
+def usage():
+    print("""Help for check_disk
+
+Basic usage: check_disk -w {warning} -c {critical} -W {warning} -C {critical} -p {/path/to/fs}
+
+Thresholds switches are optional, default values for warning is 95% and critical is 98%
+-w - Sets warning value for filesystem space usage. Default is 95%
+-c - Sets critical value for filesystem space usage. Default is 98%
+-W - Sets warning value for filesystem inodes usage. Default is 95%
+-C - Sets critical value for filesystem inodes usage. Default is 98%
+-p - Filesystem path to check
+-h - Displays this help message
+
+Example: check_mem -w 80 -c 90 -W 40 -C 60 -p /var/log
+
+
+Author: Lukasz Gogolin, lukasz.gogolin@gmail.com
+Git: http://bitbucket.org/lgogolin/nagios_plugins
+""")
+
+
+def fs_info(volume_path,usage_warning,usage_critical,inode_warning,inode_critical):
+    disk = os.statvfs(volume_path)
+    
+    total_bytes = round(float(disk.f_bsize*disk.f_blocks),2)
+    total_used_space = round(float(disk.f_bsize*(disk.f_blocks-disk.f_bfree)),2)
+    total_bytes_h = round(float(total_bytes/1024/1024/1024),2)
+    total_used_space_h = round(float(total_used_space/1024/1024/1024),2)
+    total_used_space_p = round(float((total_used_space_h*100)/total_bytes_h),2)
+    total_bytes_warning = int(float((total_bytes*usage_warning)/100))
+    total_bytes_critical = int(float((total_bytes*usage_critical)/100))
+
+    total_inodes = float(disk.f_files)
+    if total_inodes == 0:
+        total_avail_inodes=total_used_inodes=total_inodes_p=total_inodes_warning=total_inodes_critical = 0 
+    else: 
+        total_avail_inodes = float(disk.f_ffree)
+        total_used_inodes = float(total_inodes-total_avail_inodes)
+        total_inodes_p = round(float((total_used_inodes*100)/total_inodes),2)    
+        total_inodes_warning = int(float((total_inodes*inode_warning)/100))
+        total_inodes_critical = int(float((total_inodes*inode_critical)/100))
+
+    message="FileSystem: %s - [Space] Total: %s GB - Used: %s GB - %s%% [Inodes] Total: %s - Used: %s - %s%% | BTOTAL=%sB;;;; BUSED=%sB;%s;%s;; ITOTAL=%s;;;; IUSED=%s;%s;%s;;" % (volume_path, total_bytes_h, total_used_space_h, total_used_space_p, int(total_inodes), int(total_used_inodes), total_inodes_p, int(total_bytes), int(total_used_space), total_bytes_warning, total_bytes_critical, int(total_inodes), int(total_used_inodes), total_inodes_warning, total_inodes_critical)
+
+    print message
+
+    if total_inodes == 0:
+        if int(total_used_space) >= total_bytes_critical:
+            return 2
+        elif int(total_used_space) >= total_bytes_warning:
+            return 1
+        else:
+            return 0  
+    else:
+        if int(total_used_space) >= total_bytes_critical or int(total_used_inodes) >= total_inodes_critical:
+            return 2
+        elif int(total_used_space) >= total_bytes_warning or int(total_used_inodes) >= total_inodes_warning:
+            return 1
+        else:
+            return 0 
+
+if __name__ == "__main__":
+    return_main = main()
+
+    if return_main == 21:
+        print("One of parameter is not numeric value")
+        usage()
+    elif volume_path == "":
+        print("\nMissing parameter -p\n\n")
+        usage()
+    else:
+        return_fs_info = fs_info(volume_path,usage_warning,usage_critical,inode_warning,inode_critical)
+        sys.exit(return_fs_info)
