@@ -22,7 +22,7 @@ def main():
         opts, args = getopt.getopt(sys.argv[1:], "w:c:W:C:p:h")
     except getopt.GetoptError as err:
         # print help information and exit:
-        print str(err) # will print something like "option -a not recognized"
+        print(str(err)) # will print something like "option -a not recognized"
         return False
     for o, a in opts:
         if o == "-h":
@@ -97,7 +97,7 @@ def fs_info(volume_path,usage_warning,usage_critical,inode_warning,inode_critica
 
     message="FileSystem: %s - [Space] Total: %s GB - Used: %s GB - %s%% [Inodes] Total: %s - Used: %s - %s%% | BTOTAL=%sB;;;; BUSED=%sB;%s;%s;; ITOTAL=%s;;;; IUSED=%s;%s;%s;;" % (volume_path, total_bytes_h, total_used_space_h, total_used_space_p, int(total_inodes), int(total_used_inodes), total_inodes_p, int(total_bytes), int(total_used_space), total_bytes_warning, total_bytes_critical, int(total_inodes), int(total_used_inodes), total_inodes_warning, total_inodes_critical)
 
-    print message
+    print(message)
 
     if total_inodes == 0:
         if int(total_used_space) >= total_bytes_critical:
