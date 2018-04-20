@@ -66,7 +66,7 @@ Thresholds switches are optional, default values for warning is 95% and critical
 -p - Filesystem path to check
 -h - Displays this help message
 
-Example: check_mem -w 80 -c 90 -W 40 -C 60 -p /var/log
+Example: check_disk -w 80 -c 90 -W 40 -C 60 -p /var/log
 
 
 Author: Lukasz Gogolin, lukasz.gogolin@gmail.com
